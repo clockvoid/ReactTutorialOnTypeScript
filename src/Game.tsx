@@ -11,6 +11,7 @@ interface IHistory {
 interface IGameState {
   history: IHistory[];
   xIsNext: boolean;
+  stepNumber: number;
 }
 
 class Game extends React.Component<{}, IGameState> {
@@ -20,12 +21,13 @@ class Game extends React.Component<{}, IGameState> {
       history: [{
         squares: Array(9).fill(null),
       }],
+      stepNumber: 0,
       xIsNext: true,
     }
   }
 
   public handleClick: (i: number) => void = (i: number) => {
-    const history: IHistory[] = this.state.history;
+    const history: IHistory[] = this.state.history.slice(0, this.state.stepNumber + 1);
     const current: IHistory = history[history.length - 1];
     const squares: SquareValueType[] = current.squares.slice();
 
@@ -37,6 +39,7 @@ class Game extends React.Component<{}, IGameState> {
       history: history.concat([{
         squares,
       }]),
+      stepNumber: history.length,
       xIsNext: !this.state.xIsNext,
     });
   }
@@ -47,9 +50,16 @@ class Game extends React.Component<{}, IGameState> {
     });
   }
 
+  public jumpTo: (step: number) => void = (step: number) => {
+    this.setState({
+      stepNumber: step,
+      xIsNext: (step % 2) === 0,
+    });
+  }
+
   public render() {
     const history = this.state.history;
-    const current = history[history.length - 1];
+    const current = history[this.state.stepNumber];
     const winner = calculateWinner(current.squares);
 
     let status;
@@ -58,6 +68,18 @@ class Game extends React.Component<{}, IGameState> {
     } else {
       status = 'Next Player: ' + (this.state.xIsNext ? 'X' : 'O');
     }
+
+    const moves = history.map((step, move) => {
+      const clickmove = () => this.jumpTo(move);
+      const desc = move ? 
+        'Go to move # ' + move : 
+        'Go to game start';
+      return (
+        <li key={move}>
+          <button onClick={clickmove}>{desc}</button>
+        </li>
+      );
+    });
 
     const onclick: (i: number) => void = (i) => this.handleClick(i);
 
@@ -71,7 +93,7 @@ class Game extends React.Component<{}, IGameState> {
         </div>
         <div className="game-info">
           <div>{ status }</div>
-          <ol>{/* TODO */}</ol>
+          <ol>{moves}</ol>
         </div>
       </div>
     );
